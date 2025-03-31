@@ -3,42 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pharma Profit Calculator</title>
+    <title>MedProfit Analyzer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
-        /* Add custom styles for the search results dropdown */
-        #searchResults {
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        #searchResults, #searchCompareResults {
             max-height: 200px;
             overflow-y: auto;
             border: 1px solid #e2e8f0;
             background-color: white;
             border-radius: 0.375rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             z-index: 10;
             position: absolute;
             width: 100%;
+            margin-top: 0.5rem;
         }
-        #searchResults div {
-            padding: 0.5rem;
+        #searchResults div, #searchCompareResults div {
+            padding: 0.75rem 1rem;
             cursor: pointer;
+            transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
         }
-        #searchResults div:hover {
-            background-color: #f7fafc;
+        #searchResults div:hover, #searchCompareResults div:hover {
+            background-color: #f0f4f8;
+            color: #1a202c;
         }
-        /* Styles for loading indicator */
         #loadingIndicator {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 2rem;
             margin-top: 0.5rem;
-            color: #718096; /* Tailwind's text-gray-600 */
+            color: #718096;
         }
         .spinner {
             border: 4px solid rgba(0, 0, 0, 0.1);
             border-radius: 50%;
-            border-top-color: #3490dc; /* Tailwind's bg-blue-500 */
+            border-top-color: #3490dc;
             width: 1.5rem;
             height: 1.5rem;
             animation: spin 1s linear infinite;
@@ -47,88 +56,227 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .input-error {
+            border-color: #e53e3e !important;
+            box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.2) !important;
+        }
+        .error-message {
+            color: #e53e3e;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-md">
-        <header class="mb-6">
-            <h1 class="text-2xl font-bold text-center text-blue-800">Pharma Profit Calculator</h1>
-            <p class="text-center text-gray-600">Calculate profit per pack and per tablet</p>
+    <div class="container mx-auto px-4 py-8">
+        <header class="flex items-center mb-8">
+            <img src="https://companieslogo.com/img/orig/2070.SR-c475d7a4.png?t=1720244490" alt="Spimaco Logo" class="mr-4 h-12">
+            <h1 class="text-3xl font-bold text-blue-700">MedProfit Analyzer</h1>
         </header>
 
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-6">Product 1</h2>
             <div class="mb-6">
-                <label for="productSearch" class="block text-sm font-medium text-gray-700 mb-1">Search Product</label>
+                <label for="productSearch" class="block text-sm font-medium text-gray-700 mb-2">
+                    <span class="font-semibold">Product Search</span>
+                </label>
                 <div class="relative">
                     <input
                         type="text"
                         id="productSearch"
-                        class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Type to search products..."
+                        class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter product name..."
                         aria-autocomplete="list"
                         aria-controls="searchResults"
                     >
                     <div id="searchResults" class="hidden"></div>
                     <div id="loadingIndicator" class="text-center text-gray-600 text-sm mt-2">
                         <div class="spinner"></div>
-                        Loading product data...
+                        Loading...
                     </div>
                 </div>
             </div>
 
-            <div class="space-y-4 mb-6">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label for="pharmacyPrice" class="block text-sm font-medium text-gray-700 mb-1">Pharmacy Price (AED)</label>
-                        <input type="text" id="pharmacyPrice" readonly class="w-full p-2 bg-gray-100 border border-gray-300 rounded-md text-gray-700">
-                    </div>
-                    <div>
-                        <label for="retailPrice" class="block text-sm font-medium text-gray-700 mb-1">Retail Price (AED)</label>
-                        <input type="text" id="retailPrice" readonly class="w-full p-2 bg-gray-100 border border-gray-300 rounded-md text-gray-700">
-                    </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label for="pharmacyPrice" class="block text-sm font-medium text-gray-700 mb-2">
+                        <span class="font-semibold">Pharmacy Price (AED)</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="pharmacyPrice"
+                        readonly
+                        class="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-gray-700"
+                        placeholder="0.00"
+                    >
                 </div>
                 <div>
-                    <label for="packSize" class="block text-sm font-medium text-gray-700 mb-1">Number of Tablets</label>
-                    <input type="text" id="packSize" readonly class="w-full p-2 bg-gray-100 border border-gray-300 rounded-md text-gray-700">
+                    <label for="retailPrice" class="block text-sm font-medium text-gray-700 mb-2">
+                        <span class="font-semibold">Retail Price (AED)</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="retailPrice"
+                        readonly
+                        class="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-gray-700"
+                        placeholder="0.00"
+                    >
+                </div>
+                <div class="md:col-span-2">
+                    <label for="packSize" class="block text-sm font-medium text-gray-700 mb-2">
+                        <span class="font-semibold">Number of Tablets</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="packSize"
+                        readonly
+                        class="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-gray-700"
+                        placeholder="0"
+                    >
                 </div>
             </div>
 
             <div class="mb-6">
-                <label for="bonusPercentage" class="block text-sm font-medium text-gray-700 mb-1">Bonus Percentage (%)</label>
+                <label for="bonusPercentage" class="block text-sm font-medium text-gray-700 mb-2">
+                    <span class="font-semibold">Bonus Percentage (%)</span>
+                </label>
                 <input
                     type="number"
                     id="bonusPercentage"
-                    min="0"
-                    max="100"
                     step="0.01"
-                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     value="0"
+                    placeholder="0"
                     aria-describedby="bonusPercentageHelp"
                 >
-                <small id="bonusPercentageHelp" class="mt-1 text-xs text-gray-500">Enter a value between 0 and 100</small>
+                <small id="bonusPercentageHelp" class="mt-2 text-sm text-gray-500">Enter a value</small>
             </div>
 
-            <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
-                <h2 class="text-lg font-semibold text-blue-800 mb-3">Calculation Results</h2>
-                <div class="space-y-3">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <h2 class="text-xl font-semibold text-blue-700 mb-4">Calculation Results</h2>
+                <div class="space-y-4">
                     <div class="flex justify-between items-center">
-                        <span class="text-gray-700">Net Price (AED):</span>
-                        <span id="netPrice" class="font-semibold text-blue-900">0.00</span>
+                        <span class="text-gray-700 font-medium">Net Price (AED):</span>
+                        <span id="netPrice" class="font-semibold text-blue-900 text-lg">0.00</span>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-gray-700">Profit per Pack (AED):</span>
-                        <span id="profitPerPack" class="font-semibold text-blue-900">0.00</span>
+                        <span class="text-gray-700 font-medium">Profit per Pack (AED):</span>
+                        <span id="profitPerPack" class="font-semibold text-blue-900 text-lg">0.00</span>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-gray-700">Profit per Tablet (AED):</span>
-                        <span id="profitPerTablet" class="font-semibold text-blue-900">0.00</span>
+                        <span class="text-gray-700 font-medium">Profit per Tablet (AED):</span>
+                        <span id="profitPerTablet" class="font-semibold text-blue-900 text-lg">0.00</span>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <footer class="mt-6 text-center text-gray-500 text-sm">
-            <p>Data refreshes automatically from the Google Sheet</p>
+
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-6">Product 2</h2>
+            <div class="mb-6">
+                <label for="productSearchCompare" class="block text-sm font-medium text-gray-700 mb-2">
+                    <span class="font-semibold">Product Search</span>
+                </label>
+                <div class="relative">
+                    <input
+                        type="text"
+                        id="productSearchCompare"
+                        class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter product name..."
+                        aria-autocomplete="list"
+                        aria-controls="searchCompareResults"
+                    >
+                    <div id="searchCompareResults" class="hidden"></div>
+                    <div id="loadingCompareIndicator" class="text-center text-gray-600 text-sm mt-2">
+                        <div class="spinner"></div>
+                        Loading...
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label for="pharmacyPriceCompare" class="block text-sm font-medium text-gray-700 mb-2">
+                        <span class="font-semibold">Pharmacy Price (AED)</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="pharmacyPriceCompare"
+                        readonly
+                        class="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-gray-700"
+                        placeholder="0.00"
+                    >
+                </div>
+                <div>
+                    <label for="retailPriceCompare" class="block text-sm font-medium text-gray-700 mb-2">
+                        <span class="font-semibold">Retail Price (AED)</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="retailPriceCompare"
+                        readonly
+                        class="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-gray-700"
+                        placeholder="0.00"
+                    >
+                </div>
+                <div class="md:col-span-2">
+                    <label for="packSizeCompare" class="block text-sm font-medium text-gray-700 mb-2">
+                        <span class="font-semibold">Number of Tablets</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="packSizeCompare"
+                        readonly
+                        class="w-full p-3 bg-gray-100 border border-gray-300 rounded-md text-gray-700"
+                        placeholder="0"
+                    >
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <label for="bonusPercentageCompare" class="block text-sm font-medium text-gray-700 mb-2">
+                    <span class="font-semibold">Bonus Percentage (%)</span>
+                </label>
+                <input
+                    type="number"
+                    id="bonusPercentageCompare"
+                    step="0.01"
+                    class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    value="0"
+                    placeholder="0"
+                    aria-describedby="bonusPercentageHelp"
+                >
+                <small id="bonusPercentageHelp" class="mt-2 text-sm text-gray-500">Enter a value</small>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <h2 class="text-xl font-semibold text-blue-700 mb-4">Calculation Results</h2>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">Net Price (AED):</span>
+                        <span id="netPriceCompare" class="font-semibold text-blue-900 text-lg">0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">Profit per Pack (AED):</span>
+                        <span id="profitPerPackCompare" class="font-semibold text-blue-900 text-lg">0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">Profit per Tablet (AED):</span>
+                        <span id="profitPerTabletCompare" class="font-semibold text-blue-900 text-lg">0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Comparison</h2>
+            <div class="chart-container">
+                <canvas id="comparisonChart"></canvas>
+            </div>
+        </div>
+
+        <footer class="mt-8 text-center text-gray-500 text-sm">
+            <p>Data updated automatically from the Google Sheet</p>
         </footer>
     </div>
 
@@ -139,72 +287,114 @@
         const PACK_SIZE_COLUMN = 'Pack_Size';
 
         let allProducts = [];
-        let selectedProduct = null;
+        let selectedProduct1 = null;
+        let selectedProduct2 = null;
 
-        const productSearchInput = document.getElementById('productSearch');
-        const searchResultsDiv = document.getElementById('searchResults');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        const pharmacyPriceInput = document.getElementById('pharmacyPrice');
-        const retailPriceInput = document.getElementById('retailPrice');
-        const packSizeInput = document.getElementById('packSize');
-        const bonusPercentageInput = document.getElementById('bonusPercentage');
-        const netPriceSpan = document.getElementById('netPrice');
-        const profitPerPackSpan = document.getElementById('profitPerPack');
-        const profitPerTabletSpan = document.getElementById('profitPerTablet');
+        const productSearchInput1 = document.getElementById('productSearch');
+        const searchResultsDiv1 = document.getElementById('searchResults');
+        const loadingIndicator1 = document.getElementById('loadingIndicator');
+        const pharmacyPriceInput1 = document.getElementById('pharmacyPrice');
+        const retailPriceInput1 = document.getElementById('retailPrice');
+        const packSizeInput1 = document.getElementById('packSize');
+        const bonusPercentageInput1 = document.getElementById('bonusPercentage');
+        const netPriceSpan1 = document.getElementById('netPrice');
+        const profitPerPackSpan1 = document.getElementById('profitPerPack');
+        const profitPerTabletSpan1 = document.getElementById('profitPerTablet');
+
+        const productSearchInput2 = document.getElementById('productSearchCompare');
+        const searchResultsDiv2 = document.getElementById('searchCompareResults');
+        const loadingIndicator2 = document.getElementById('loadingCompareIndicator');
+        const pharmacyPriceInput2 = document.getElementById('pharmacyPriceCompare');
+        const retailPriceInput2 = document.getElementById('retailPriceCompare');
+        const packSizeInput2 = document.getElementById('packSizeCompare');
+        const bonusPercentageInput2 = document.getElementById('bonusPercentageCompare');
+        const netPriceSpan2 = document.getElementById('netPriceCompare');
+        const profitPerPackSpan2 = document.getElementById('profitPerPackCompare');
+        const profitPerTabletSpan2 = document.getElementById('profitPerTabletCompare');
+
+        const comparisonChartCtx = document.getElementById('comparisonChart').getContext('2d');
+        let comparisonChart;
+        let chartInitialized = false;
 
         document.addEventListener('DOMContentLoaded', initializeApp);
 
         async function initializeApp() {
             try {
-                // Show loading indicator
-                loadingIndicator.classList.remove('hidden');
+                loadingIndicator1.classList.remove('hidden');
+                loadingIndicator2.classList.remove('hidden');
                 allProducts = await fetchDataFromSheet();
-                loadingIndicator.classList.add('hidden');
-                productSearchInput.addEventListener('input', handleProductSearch);
-                productSearchInput.addEventListener('focus', () => {
-                    if (productSearchInput.value.trim().length > 0) {
-                        handleProductSearch();
+                loadingIndicator1.classList.add('hidden');
+                loadingIndicator2.classList.add('hidden');
+                productSearchInput1.addEventListener('input', handleProductSearch1);
+                productSearchInput1.addEventListener('focus', () => {
+                    if (productSearchInput1.value.trim().length > 0) {
+                        handleProductSearch1();
                     }
                 });
-                bonusPercentageInput.addEventListener('input', calculateAndDisplayResults);
+                bonusPercentageInput1.addEventListener('input', () => {
+                    calculateAndDisplayResults(1);
+                    updateComparisonChart();
+                });
+
+                productSearchInput2.addEventListener('input', handleProductSearch2);
+                productSearchInput2.addEventListener('focus', () => {
+                    if (productSearchInput2.value.trim().length > 0) {
+                        handleProductSearch2();
+                    }
+                });
+                bonusPercentageInput2.addEventListener('input', () => {
+                    calculateAndDisplayResults(2);
+                    updateComparisonChart();
+                });
 
                 document.addEventListener('click', (e) => {
-                    if (!productSearchInput.contains(e.target) && !searchResultsDiv.contains(e.target)) {
-                        searchResultsDiv.classList.add('hidden');
+                    if (!productSearchInput1.contains(e.target) && !searchResultsDiv1.contains(e.target)) {
+                        searchResultsDiv1.classList.add('hidden');
+                    }
+                    if (!productSearchInput2.contains(e.target) && !searchResultsDiv2.contains(e.target)) {
+                        searchResultsDiv2.classList.add('hidden');
                     }
                 });
+                initComparisonChart();
+
             } catch (error) {
-                loadingIndicator.textContent = 'Error loading product data. Please try again.';
-                loadingIndicator.classList.remove('hidden');
-                loadingIndicator.classList.add('text-red-500');
+                loadingIndicator1.textContent = 'Error loading data. Please check your internet connection and try again.';
+                loadingIndicator1.classList.remove('hidden');
+                loadingIndicator1.classList.add('text-red-500');
+                loadingIndicator2.textContent = 'Error loading data. Please check your internet connection and try again.';
+                loadingIndicator2.classList.remove('hidden');
+                loadingIndicator2.classList.add('text-red-500');
                 console.error('Error loading product data:', error);
             }
         }
 
         async function fetchDataFromSheet() {
             const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQETOV8GTln48hRrlkvRZb1sSMoLo-xA59JQJBjkQK5D4l-g2JngRd-mJ_hw2LbiQ/pub?output=csv';
-
-            const response = await fetch(GOOGLE_SHEET_URL);
-            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-
-            const csvText = await response.text();
-
-            const results = Papa.parse(csvText, {
-                header: true,
-                skipEmptyLines: true,
-                dynamicTyping: true,
-                transform: (value, field) => value?.trim?.() ?? value
-            });
-
-            return results.data;
+            try {
+                const response = await fetch(GOOGLE_SHEET_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const csvText = await response.text();
+                const results = Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    dynamicTyping: true,
+                    transform: (value, field) => value?.trim?.() ?? value
+                });
+                return results.data;
+            } catch (error) {
+                console.error('Error fetching or parsing data:', error);
+                throw error; // Re-throw the error to be caught in initializeApp
+            }
         }
 
-        function handleProductSearch() {
-            const searchTerm = productSearchInput.value.trim().toLowerCase();
-            searchResultsDiv.innerHTML = '';
+        function handleProductSearch1() {
+            const searchTerm = productSearchInput1.value.trim().toLowerCase();
+            searchResultsDiv1.innerHTML = '';
 
             if (searchTerm === '') {
-                searchResultsDiv.classList.add('hidden');
+                searchResultsDiv1.classList.add('hidden');
                 return;
             }
 
@@ -213,37 +403,102 @@
             ).slice(0, 10);
 
             if (matchingProducts.length > 0) {
-                searchResultsDiv.classList.remove('hidden');
+                searchResultsDiv1.classList.remove('hidden');
                 matchingProducts.forEach(product => {
                     const resultItem = document.createElement('div');
                     resultItem.textContent = product[TRADE_NAME_COLUMN];
                     resultItem.addEventListener('click', () => {
-                        productSearchInput.value = product[TRADE_NAME_COLUMN];
-                        searchResultsDiv.classList.add('hidden');
-                        updateProductFields(product);
+                        productSearchInput1.value = product[TRADE_NAME_COLUMN];
+                        searchResultsDiv1.classList.add('hidden');
+                        updateProductFields(product, 1);
+                        loadingIndicator1.classList.add('hidden');
                     });
-                    searchResultsDiv.appendChild(resultItem);
+                    searchResultsDiv1.appendChild(resultItem);
                 });
             } else {
-                searchResultsDiv.classList.remove('hidden');
+                searchResultsDiv1.classList.remove('hidden');
                 const noResultsItem = document.createElement('div');
                 noResultsItem.className = 'p-2 text-gray-500';
                 noResultsItem.textContent = 'No products found';
-                searchResultsDiv.appendChild(noResultsItem);
+                searchResultsDiv1.appendChild(noResultsItem);
             }
         }
 
-        function updateProductFields(product) {
-            selectedProduct = product;
+        function handleProductSearch2() {
+            const searchTerm = productSearchInput2.value.trim().toLowerCase();
+            searchResultsDiv2.innerHTML = '';
 
-            pharmacyPriceInput.value = formatCurrency(product[PHARMACY_PRICE_COLUMN] || 0);
-            retailPriceInput.value = formatCurrency(product[PUBLIC_PRICE_COLUMN]|| 0);
-            packSizeInput.value = product[PACK_SIZE_COLUMN] || '';
+            if (searchTerm === '') {
+                searchResultsDiv2.classList.add('hidden');
+                return;
+            }
 
-            calculateAndDisplayResults();
+            const matchingProducts = allProducts.filter(product =>
+                product[TRADE_NAME_COLUMN]?.toLowerCase().includes(searchTerm)
+            ).slice(0, 10);
+
+            if (matchingProducts.length > 0) {
+                searchResultsDiv2.classList.remove('hidden');
+                matchingProducts.forEach(product => {
+                    const resultItem = document.createElement('div');
+                    resultItem.textContent = product[TRADE_NAME_COLUMN];
+                    resultItem.addEventListener('click', () => {
+                        productSearchInput2.value = product[TRADE_NAME_COLUMN];
+                        searchResultsDiv2.classList.add('hidden');
+                        updateProductFields(product, 2);
+                        loadingIndicator2.classList.add('hidden');
+                    });
+                    searchResultsDiv2.appendChild(resultItem);
+                });
+            } else {
+                searchResultsDiv2.classList.remove('hidden');
+                const noResultsItem = document.createElement('div');
+                noResultsItem.className = 'p-2 text-gray-500';
+                noResultsItem.textContent = 'No products found';
+                searchResultsDiv2.appendChild(noResultsItem);
+            }
         }
 
-        function calculateAndDisplayResults() {
+        function updateProductFields(product, productNumber) {
+            if (productNumber === 1) {
+                selectedProduct1 = product;
+                pharmacyPriceInput1.value = formatCurrency(product[PHARMACY_PRICE_COLUMN] || 0);
+                retailPriceInput1.value = formatCurrency(product[PUBLIC_PRICE_COLUMN] || 0);
+                packSizeInput1.value = product[PACK_SIZE_COLUMN] || '';
+                calculateAndDisplayResults(1);
+            } else if (productNumber === 2) {
+                selectedProduct2 = product;
+                pharmacyPriceInput2.value = formatCurrency(product[PHARMACY_PRICE_COLUMN] || 0);
+                retailPriceInput2.value = formatCurrency(product[PUBLIC_PRICE_COLUMN] || 0);
+                packSizeInput2.value = product[PACK_SIZE_COLUMN] || '';
+                calculateAndDisplayResults(2);
+            }
+            updateComparisonChart();
+        }
+
+        function calculateAndDisplayResults(productNumber) {
+            let selectedProduct, pharmacyPriceInput, retailPriceInput, packSizeInput, netPriceSpan, profitPerPackSpan, profitPerTabletSpan, bonusPercentageInput;
+
+            if (productNumber === 1) {
+                selectedProduct = selectedProduct1;
+                pharmacyPriceInput = pharmacyPriceInput1;
+                retailPriceInput = retailPriceInput1;
+                packSizeInput = packSizeInput1;
+                netPriceSpan = netPriceSpan1;
+                profitPerPackSpan = profitPerPackSpan1;
+                profitPerTabletSpan = profitPerTabletSpan1;
+                bonusPercentageInput = bonusPercentageInput1;
+            } else if (productNumber === 2) {
+                selectedProduct = selectedProduct2;
+                pharmacyPriceInput = pharmacyPriceInput2;
+                retailPriceInput = retailPriceInput2;
+                packSizeInput = packSizeInput2;
+                netPriceSpan = netPriceSpan2;
+                profitPerPackSpan = profitPerPackSpan2;
+                profitPerTabletSpan = profitPerTabletSpan2;
+                bonusPercentageInput = bonusPercentageInput2;
+            }
+
             if (!selectedProduct) return;
 
             const pharmacyPrice = parseFloat(selectedProduct[PHARMACY_PRICE_COLUMN]) || 0;
@@ -263,6 +518,157 @@
         function formatCurrency(value) {
             const num = parseFloat(value);
             return isNaN(num) ? '0.00' : num.toFixed(2);
+        }
+
+        function initComparisonChart() {
+            try {
+                comparisonChart = new Chart(comparisonChartCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Product 1', 'Product 2'],
+                        datasets: [
+                            {
+                                label: 'Profit per Pack (AED)',
+                                data: [0, 0],
+                                backgroundColor: ['rgba(56, 189, 248, 0.7)', 'rgba(203, 213, 225, 0.7)'],
+                                borderColor: ['rgba(56, 189, 248, 1)', 'rgba(203, 213, 225, 1)'],
+                                borderWidth: 1,
+                                borderRadius: 5,
+                            },
+                            {
+                                label: 'Profit per Tablet (AED)',
+                                data: [0, 0],
+                                backgroundColor: ['rgba(16, 185, 129, 0.7)', 'rgba(244, 114, 182, 0.7)'],
+                                borderColor: ['rgba(16, 185, 129, 1)', 'rgba(244, 114, 182, 1)'],
+                                borderWidth: 1,
+                                borderRadius: 5,
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        animation: {
+                            duration: 800,
+                            easing: 'easeInOutQuad'
+                        },
+                        layout: {
+                            padding: {
+                                left: 10,
+                                right: 10,
+                                top: 10,
+                                bottom: 10
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Profit Comparison',
+                                font: {
+                                    size: 18,
+                                    weight: 'bold'
+                                },
+                                padding: {
+                                    bottom: 10
+                                }
+                            },
+                            legend: {
+                                display: false,
+                                position: 'bottom',
+                                align: 'center',
+                                labels: {
+                                    font: {
+                                        size: 12
+                                    },
+                                    boxWidth: 20,
+                                    padding: 20
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    font: {
+                                        size: 12
+                                    },
+                                    padding: 10,
+                                    callback: (value) => value.toFixed(2)
+                                },
+                                grid: {
+                                    display: true,
+                                    color: 'rgba(0, 0, 0, 0.05)',
+                                    lineWidth: 1
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold'
+                                    },
+                                    padding: 5
+                                },
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    },
+                    plugins: ['chartjs-plugin-datalabels']
+                });
+                chartInitialized = true;
+            } catch (error) {
+                console.error("Error initializing chart:", error);
+                // Optionally, display a user-friendly message in the UI
+                document.getElementById('comparisonChart').innerHTML = '<div class="text-red-500 text-center p-4">Error initializing chart. Please try again.</div>';
+                chartInitialized = false;
+            }
+        }
+
+        function updateComparisonChart() {
+            let profitPerPack1 = 0;
+            let profitPerTablet1 = 0;
+            let profitPerPack2 = 0;
+            let profitPerTablet2 = 0;
+            let productName1 = 'Product 1';
+            let productName2 = 'Product 2';
+
+            if (selectedProduct1) {
+                const pharmacyPrice1 = parseFloat(selectedProduct1[PHARMACY_PRICE_COLUMN]) || 0;
+                const retailPrice1 = parseFloat(selectedProduct1[PUBLIC_PRICE_COLUMN]) || 0;
+                const packSize1 = parseInt(selectedProduct1[PACK_SIZE_COLUMN]) || 1;
+                const bonusPercentage1 = parseFloat(bonusPercentageInput1.value) || 0;
+                const netPrice1 = pharmacyPrice1 / (1 + (bonusPercentage1 / 100));
+                profitPerPack1 = retailPrice1 - netPrice1;
+                profitPerTablet1 = packSize1 > 0 ? profitPerPack1 / packSize1 : 0;
+                productName1 = selectedProduct1[TRADE_NAME_COLUMN] || 'Product 1';
+            }
+
+            if (selectedProduct2) {
+                const pharmacyPrice2 = parseFloat(selectedProduct2[PHARMACY_PRICE_COLUMN]) || 0;
+                const retailPrice2 = parseFloat(selectedProduct2[PUBLIC_PRICE_COLUMN]) || 0;
+                const packSize2 = parseInt(selectedProduct2[PACK_SIZE_COLUMN]) || 1;
+                const bonusPercentage2 = parseFloat(bonusPercentageInput2.value) || 0;
+                const netPrice2 = pharmacyPrice2 / (1 + (bonusPercentage2 / 100));
+                profitPerPack2 = retailPrice2 - netPrice2;
+                profitPerTablet2 = packSize2 > 0 ? profitPerPack2 / packSize2 : 0;
+                productName2 = selectedProduct2[TRADE_NAME_COLUMN] || 'Product 2';
+            }
+
+            if (comparisonChart && chartInitialized) {
+                comparisonChart.data.labels = [productName1, productName2];
+                comparisonChart.data.datasets[0].data = [profitPerPack1, profitPerPack2];
+                comparisonChart.data.datasets[1].data = [profitPerTablet1, profitPerTablet2];
+                try {
+                    comparisonChart.update();
+                } catch (error) {
+                    console.error("Error updating chart:", error);
+                    // Optionally, display a user-friendly message
+                    document.getElementById('comparisonChart').innerHTML = '<div class="text-red-500 text-center p-4">Error updating chart. Please try again.</div>';
+                }
+            } else {
+                initComparisonChart();
+            }
         }
     </script>
 </body>
