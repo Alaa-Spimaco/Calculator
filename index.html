@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MedProfit Analyzer</title>
+    <title>The Profit Hub!</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -71,7 +71,7 @@
     <div class="container mx-auto px-4 py-8">
         <header class="flex items-center mb-8">
             <img src="https://companieslogo.com/img/orig/2070.SR-c475d7a4.png?t=1720244490" alt="Spimaco Logo" class="mr-4 h-12">
-            <h1 class="text-3xl font-bold text-blue-700">MedProfit Analyzer</h1>
+            <h1 class="text-3xl font-bold text-blue-700">The Profit Hub!</h1>
         </header>
 
         <div class="bg-white rounded-lg shadow-md p-6 mb-8">
@@ -90,10 +90,6 @@
                         aria-controls="searchResults"
                     >
                     <div id="searchResults" class="hidden"></div>
-                    <div id="loadingIndicator" class="text-center text-gray-600 text-sm mt-2">
-                        <div class="spinner"></div>
-                        Loading...
-                    </div>
                 </div>
             </div>
 
@@ -187,10 +183,6 @@
                         aria-controls="searchCompareResults"
                     >
                     <div id="searchCompareResults" class="hidden"></div>
-                    <div id="loadingCompareIndicator" class="text-center text-gray-600 text-sm mt-2">
-                        <div class="spinner"></div>
-                        Loading...
-                    </div>
                 </div>
             </div>
 
@@ -320,11 +312,7 @@
 
         async function initializeApp() {
             try {
-                loadingIndicator1.classList.remove('hidden');
-                loadingIndicator2.classList.remove('hidden');
                 allProducts = await fetchDataFromSheet();
-                loadingIndicator1.classList.add('hidden');
-                loadingIndicator2.classList.add('hidden');
                 productSearchInput1.addEventListener('input', handleProductSearch1);
                 productSearchInput1.addEventListener('focus', () => {
                     if (productSearchInput1.value.trim().length > 0) {
@@ -358,12 +346,6 @@
                 initComparisonChart();
 
             } catch (error) {
-                loadingIndicator1.textContent = 'Error loading data. Please check your internet connection and try again.';
-                loadingIndicator1.classList.remove('hidden');
-                loadingIndicator1.classList.add('text-red-500');
-                loadingIndicator2.textContent = 'Error loading data. Please check your internet connection and try again.';
-                loadingIndicator2.classList.remove('hidden');
-                loadingIndicator2.classList.add('text-red-500');
                 console.error('Error loading product data:', error);
             }
         }
@@ -411,7 +393,6 @@
                         productSearchInput1.value = product[TRADE_NAME_COLUMN];
                         searchResultsDiv1.classList.add('hidden');
                         updateProductFields(product, 1);
-                        loadingIndicator1.classList.add('hidden');
                     });
                     searchResultsDiv1.appendChild(resultItem);
                 });
@@ -446,7 +427,6 @@
                         productSearchInput2.value = product[TRADE_NAME_COLUMN];
                         searchResultsDiv2.classList.add('hidden');
                         updateProductFields(product, 2);
-                        loadingIndicator2.classList.add('hidden');
                     });
                     searchResultsDiv2.appendChild(resultItem);
                 });
@@ -572,15 +552,19 @@
                                 }
                             },
                             legend: {
-                                display: false,
-                                position: 'bottom',
-                                align: 'center',
-                                labels: {
-                                    font: {
-                                        size: 12
-                                    },
-                                    boxWidth: 20,
-                                    padding: 20
+                                display: false
+                            },
+                            datalabels: {
+                                anchor: 'end',
+                                align: 'top',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                color: '#000',
+                                formatter: (value) => value.toFixed(2),
+                                padding: {
+                                    bottom: 5
                                 }
                             }
                         },
